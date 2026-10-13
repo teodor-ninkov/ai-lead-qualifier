@@ -1,6 +1,7 @@
 import os
 from collections import Counter
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 
@@ -154,8 +155,19 @@ st.write("")
 chart_col, table_col = st.columns([1, 2])
 with chart_col:
     st.caption("Score distribution")
-    dist = pd.DataFrame({"score": SCORES, "leads": [counts.get(s, 0) for s in SCORES]}).set_index("score")
-    st.bar_chart(dist, color="#1E3A5F", height=220)
+    dist = pd.DataFrame({"score": SCORES, "leads": [counts.get(s, 0) for s in SCORES]})
+    chart = (
+        alt.Chart(dist)
+        .mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3)
+        .encode(
+            x=alt.X("score", sort=SCORES, title=None, axis=alt.Axis(labelAngle=0)),
+            y=alt.Y("leads", title=None, axis=alt.Axis(tickMinStep=1)),
+            color=alt.Color("score", scale=alt.Scale(domain=SCORES, range=[SCORE_COLORS[s] for s in SCORES]), legend=None),
+            tooltip=["score", "leads"],
+        )
+        .properties(height=220)
+    )
+    st.altair_chart(chart, width="stretch")
 with table_col:
     st.caption("Routes")
     routes = results[results["score"].isin(SCORES)][["name", "pickup_city", "delivery_city", "desired_date", "score"]]
