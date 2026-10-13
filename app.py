@@ -60,7 +60,7 @@ with st.expander(f"Preview {len(leads)} leads"):
     st.dataframe(leads, width="stretch", hide_index=True)
 
 if st.button("Qualify leads", type="primary"):
-    progress = st.progress(0, text="Starting...")
+    progress = st.progress(0, text="Starting... this takes about 1 minute for 10 leads")
 
     def update(done, total):
         progress.progress(done / total, text=f"Qualified {done} of {total}")
@@ -79,7 +79,8 @@ if results is not None:
     if errors:
         st.warning(f"Failed leads: {errors}. Check the score_reason column for details.")
 
-    selected = st.multiselect("Show", SCORES + ["Error"], default=SCORES)
+    default = SCORES + ["Error"] if errors else SCORES
+    selected = st.multiselect("Show", SCORES + ["Error"], default=default)
     view = results[results["score"].isin(selected)]
 
     table = view[["name", "vehicle", "pickup_city", "delivery_city", "desired_date", "score", "score_reason"]]

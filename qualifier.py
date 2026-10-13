@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import time
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -12,6 +13,8 @@ load_dotenv()
 DEFAULT_MODEL = "gemini-2.5-flash"
 REQUIRED_COLUMNS = ["name", "email", "phone", "message", "date"]
 SCORES = ["Hot", "Warm", "Cold"]
+MAX_ATTEMPTS = 4
+RETRY_CODES = ("429", "500", "503", "RESOURCE_EXHAUSTED", "UNAVAILABLE")
 OUTPUT_FIELDS = [
     "vehicle",
     "pickup_city",
@@ -85,14 +88,30 @@ def qualify_lead(client, lead, model=DEFAULT_MODEL):
     return parse_response(response.text)
 
 
+def is_retryable(error):
+    text = str(error)
+    return any(code in text for code in RETRY_CODES)
+
+
+def qualify_with_retry(client, lead, model):
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            return qualify_lead(client, lead, model)
+        except Exception as error:
+            if attempt == MAX_ATTEMPTS or not is_retryable(error):
+                raise
+            time.sleep(5 * 2 ** (attempt - 1))
+
+
 def qualify_leads(df, api_key=None, model=None, on_progress=None):
     client = get_client(api_key)
     model = model or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
+    delay = float(os.getenv("REQUEST_DELAY", "4"))
     rows = []
     total = len(df)
     for i, lead in enumerate(df.to_dict(orient="records"), start=1):
         try:
-            result = qualify_lead(client, lead, model)
+            result = qualify_with_retry(client, lead, model)
         except Exception as error:
             result = {field: "" for field in OUTPUT_FIELDS}
             result["score"] = "Error"
@@ -100,6 +119,8 @@ def qualify_leads(df, api_key=None, model=None, on_progress=None):
         rows.append({**lead, **result})
         if on_progress:
             on_progress(i, total)
+        if i < total:
+            time.sleep(delay)
     return pd.DataFrame(rows)
 
 
