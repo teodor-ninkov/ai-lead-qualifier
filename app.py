@@ -77,7 +77,21 @@ if results is not None:
 
     errors = int(counts.get("Error", 0))
     if errors:
-        st.warning(f"Failed leads: {errors}. Check the score_reason column for details.")
+        st.warning(f"Failed leads: {errors}. Usually a temporary overload on Google's side.")
+        if st.button("Retry failed leads"):
+            failed = results[results["score"] == "Error"][list(leads.columns)]
+            progress = st.progress(0, text="Retrying...")
+
+            def update_retry(done, total):
+                progress.progress(done / total, text=f"Retried {done} of {total}")
+
+            retried = qualify_leads(failed, api_key=api_key, on_progress=update_retry)
+            retried.index = failed.index
+            progress.empty()
+            results = results[results["score"] != "Error"]
+            results = pd.concat([results, retried]).sort_index()
+            st.session_state["results"] = results
+            st.rerun()
 
     default = SCORES + ["Error"] if errors else SCORES
     selected = st.multiselect("Show", SCORES + ["Error"], default=default)
