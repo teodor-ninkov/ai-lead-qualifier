@@ -11,7 +11,7 @@ For every lead the app:
 
 Built from real experience in US auto transport sales, where agents spend hours reading quote requests and writing the same follow-ups by hand.
 
-**Live demo:** [add your Streamlit link here]
+**Live demo:** (https://ai-lead-qualifier-mwbmqp4tzt6aifyytdgv8x.streamlit.app/)
 
 ![Screenshot](screenshot.png)
 
