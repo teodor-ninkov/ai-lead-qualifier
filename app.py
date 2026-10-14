@@ -1,4 +1,5 @@
 import os
+import time
 from collections import Counter
 
 import altair as alt
@@ -125,7 +126,9 @@ with left:
         st.dataframe(leads, width="stretch", hide_index=True)
 with right:
     if st.button("Qualify leads", type="primary", width="stretch"):
+        started = time.time()
         st.session_state["results"] = run_qualification(leads, api_key, "Qualifying")
+        st.session_state["elapsed"] = time.time() - started
         st.session_state["emails"] = {}
 
 results = st.session_state.get("results")
@@ -146,7 +149,8 @@ if errors:
 st.write("")
 c1, c2, c3, c4 = st.columns(4)
 total = len(results)
-kpi(c1, "Leads processed", total, f"{total - errors} scored")
+elapsed = st.session_state.get("elapsed")
+kpi(c1, "Leads processed", total, f"{total - errors} scored" + (f" in {elapsed:.0f}s" if elapsed else ""))
 kpi(c2, "Hot", counts.get("Hot", 0), "call today")
 kpi(c3, "Warm", counts.get("Warm", 0), "follow up this week")
 kpi(c4, "Cold", counts.get("Cold", 0), "ask for details")
