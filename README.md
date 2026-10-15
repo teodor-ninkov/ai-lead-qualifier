@@ -20,6 +20,15 @@ You give it a CSV of raw requests. For each one it pulls out the vehicle, pickup
 - **A model I used was switched off.** `gemini-2.5-flash` started returning 404 for new accounts. The model name now comes from an environment variable, so changing it does not need a code change.
 - **One bad response used to break the run.** Every lead is processed on its own, and a failure is saved as an `Error` row with the reason, so the other leads still finish.
 
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+The tests use a fake Gemini client, so they run without an API key: JSON parsing (including responses wrapped in code fences), score normalisation, retrying only on 503 / 429, and that one failed lead does not stop the batch.
+
 ## Run it locally
 
 ```bash
